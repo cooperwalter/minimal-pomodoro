@@ -9,10 +9,12 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import { app, shell, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import MainWindow from './main_window';
 import MenuBuilder from './menu';
+import TimerTray from './timer_tray';
 import { resolveHtmlPath } from './util';
 
 export default class AppUpdater {
@@ -23,7 +25,8 @@ export default class AppUpdater {
   }
 }
 
-let mainWindow: BrowserWindow | null = null;
+let mainWindow: MainWindow | null = null;
+let tray: TimerTray | null = null;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -39,9 +42,10 @@ if (process.env.NODE_ENV === 'production') {
 const isDevelopment =
   process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
-if (isDevelopment) {
-  require('electron-debug')();
-}
+// Opens devtools
+// if (isDevelopment) {
+//   require('electron-debug')();
+// }
 
 const installExtensions = async () => {
   const installer = require('electron-devtools-installer');
@@ -69,32 +73,31 @@ const createWindow = async () => {
     return path.join(RESOURCES_PATH, ...paths);
   };
 
-  mainWindow = new BrowserWindow({
-    show: false,
-    width: 1024,
-    height: 728,
-    icon: getAssetPath('icon.png'),
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
-  });
-
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  mainWindow = new MainWindow(
+    resolveHtmlPath('index.html'),
+    path.join(__dirname, 'preload.js')
+  );
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
       throw new Error('"mainWindow" is not defined');
     }
+    if (!tray) {
+      throw new Error('"tray" is not defined');
+    }
     if (process.env.START_MINIMIZED) {
       mainWindow.minimize();
-    } else {
-      mainWindow.show();
     }
   });
 
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  const iconName =
+    process.platform === 'win32' ? 'windows-icon.png' : 'iconTemplate.png';
+  const iconPath = getAssetPath(iconName);
+  tray = new TimerTray(iconPath, mainWindow);
 
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
@@ -128,7 +131,7 @@ app
     createWindow();
     app.on('activate', () => {
       // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
+      // dock icon is clicked and there are no other as open.
       if (mainWindow === null) createWindow();
     });
   })
