@@ -1,4 +1,7 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
+import { Provider } from 'react-redux';
+
+import store from './store';
 import icon from '../../assets/icon.svg';
 import './App.css';
 
@@ -41,10 +44,12 @@ const Hello = () => {
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Hello />} />
-      </Routes>
-    </Router>
+    <Provider store={store}>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Hello />} />
+        </Routes>
+      </Router>
+    </Provider>
   );
 }

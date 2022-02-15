@@ -18,7 +18,7 @@
 
 ## Model Design
 
-* Current time
+* Current duration
 * Current period length (25 minutes vs. 5 minutes, e.g.)
 * Current period type (?)
 * Current period set (i.e. group of 4)
